@@ -4,7 +4,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Header from './Header';
 import Sidebar from './Sidebar';
-import KeyboardShortcutsHelp from '../ui/KeyboardShortcutsHelp';
 import useSwipeGesture from '@/app/lib/hooks/useSwipeGesture';
 
 interface MainLayoutProps {
@@ -100,9 +99,6 @@ export default function MainLayout({ children }: MainLayoutProps) {
           />
         )}
       </AnimatePresence>
-
-      {/* Keyboard shortcuts help */}
-      <KeyboardShortcutsHelp />
     </div>
   );
 }
