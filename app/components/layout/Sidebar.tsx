@@ -10,9 +10,10 @@ import { buttonHoverVariants, sidebarAnimationVariants } from '@/app/lib/utils/a
 
 interface SidebarProps {
   isOpen: boolean;
+  onClose?: () => void;
 }
 
-export default function Sidebar({ isOpen }: SidebarProps) {
+export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { 
     sessions, 
     currentSessionId, 
@@ -29,11 +30,13 @@ export default function Sidebar({ isOpen }: SidebarProps) {
   // Handle new chat creation
   const handleNewChat = () => {
     createSession();
+    if (onClose) onClose(); // Close sidebar after creating a new chat on mobile
   };
   
   // Handle selecting a session
   const handleSelectSession = (sessionId: string) => {
     setCurrentSessionId(sessionId);
+    if (onClose) onClose(); // Close sidebar after selecting a session on mobile
   };
   
   // Get a truncated title for a session based on the first message
