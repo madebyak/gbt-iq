@@ -1,4 +1,4 @@
-# GPT-IQ Chat Interface Implementation Plan
+# GPT-IRAQ Implementation Plan
 
 ## Overview
 This document outlines the detailed implementation plan for recreating the GPT-IQ chat interface. The interface consists of a dark-themed sidebar and main chat area with support for Arabic language.
