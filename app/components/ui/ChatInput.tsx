@@ -82,10 +82,9 @@ export default function ChatInput({ onSendMessage }: ChatInputProps) {
         </div>
       </div>
       
-      {/* Keyboard shortcut hint */}
+      {/* Footer attribution */}
       <div className="mt-2 text-xs text-gray-accent text-center hidden sm:block">
-        Press <kbd className="px-1.5 py-0.5 bg-[#282A2C] rounded text-white font-mono">/</kbd> to focus • 
-        Press <kbd className="px-1.5 py-0.5 bg-[#282A2C] rounded text-white font-mono">Enter</kbd> to send
+        Developed by <a href="https://www.moonswhale.com" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">MoonWhale Team</a>
       </div>
     </div>
   );

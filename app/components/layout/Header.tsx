@@ -26,12 +26,14 @@ export default function Header({ onMenuClick }: HeaderProps) {
         </Link>
       </div>
       <div>
-        <Link 
-          href="/auth" 
+        <a 
+          href="https://www.instagram.com/moonwhale.iq" 
+          target="_blank"
+          rel="noopener noreferrer"
           className="rounded-md bg-accent px-4 py-2 text-text-primary hover:bg-opacity-90 transition-colors font-medium"
         >
-          Get Started
-        </Link>
+          Developers
+        </a>
       </div>
     </header>
   );
