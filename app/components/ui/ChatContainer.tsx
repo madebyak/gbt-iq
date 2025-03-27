@@ -89,9 +89,7 @@ export default function ChatContainer() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, ease: [0.22, 0, 0.36, 1] }}
               >
-                <p className="text-gray-accent text-lg font-arabic">
-                  اكتب رسالة لبدء المحادثة
-                </p>
+                {/* Empty state - no prompt text */}
               </motion.div>
             )}
 
