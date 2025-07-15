@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
-import { adminDb } from '../../lib/firebase-admin';
+// Firebase admin will be imported conditionally
 import { cookies } from 'next/headers';
 import { getToken } from 'next-auth/jwt';
 // Note: authOptions removed - using getToken for auth checks
 
-// Initialize Gemini API with logging
-const apiKey = process.env.GEMINI_API_KEY || '';
-console.log(`Using Gemini API key: ${apiKey.substring(0, 5)}...`);
-const genAI = new GoogleGenerativeAI(apiKey);
+// Gemini API will be initialized in the request handler
 
 // Configure safety settings
 const safetySettings = [
@@ -38,6 +35,7 @@ async function getOrCreateChatHistory(sessionId: string, userId: string | null) 
   try {
     // For authenticated users, store in Firestore
     if (userId) {
+      const { adminDb } = await import('../../lib/firebase-admin');
       const userChatsRef = adminDb.collection('users').doc(userId).collection('chats');
       const chatDocRef = userChatsRef.doc(sessionId);
       const chatDoc = await chatDocRef.get();
@@ -74,6 +72,7 @@ async function saveMessageToHistory(
 ) {
   try {
     if (userId) {
+      const { adminDb } = await import('../../lib/firebase-admin');
       const userChatsRef = adminDb.collection('users').doc(userId).collection('chats');
       const chatDocRef = userChatsRef.doc(sessionId);
       
@@ -185,11 +184,17 @@ export async function POST(request: NextRequest) {
     const chatHistory = await getOrCreateChatHistory(chatSessionId, userId);
     const chatMessages = chatHistory?.messages || [];
     
-    // Debug: Using model gemini-pro
-    console.log('Using Gemini model: gemini-pro');
+    // Initialize Gemini API
+    const apiKey = process.env.GEMINI_API_KEY || '';
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: 'Gemini API key not configured' },
+        { status: 500 }
+      );
+    }
     
-    // Try to get model
-    console.log('Attempting to use model: gemini-pro');
+    const genAI = new GoogleGenerativeAI(apiKey);
+    console.log('Using Gemini model: gemini-pro');
     
     // Create a chat model
     const model = genAI.getGenerativeModel({ 
