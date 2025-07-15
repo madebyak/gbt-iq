@@ -82,5 +82,5 @@ export default function useSwipeGesture<T extends HTMLElement>(
       element.removeEventListener('touchmove', onTouchMove);
       element.removeEventListener('touchend', onTouchEnd);
     };
-  }, [ref]);
+  }, [ref, onTouchStart, onTouchMove, onTouchEnd]);
 }

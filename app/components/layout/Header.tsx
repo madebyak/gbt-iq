@@ -3,13 +3,25 @@
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Menu } from 'lucide-react';
+import { Menu, User, LogOut, Settings } from 'lucide-react';
+import { useSession, signOut } from 'next-auth/react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/app/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from '@/app/components/ui/avatar';
 
 interface HeaderProps {
   onMenuClick?: () => void;
 }
 
 export default function Header({ onMenuClick }: HeaderProps) {
+  const { data: session } = useSession();
+  
   return (
     <header className="flex items-center justify-between px-6 py-4 bg-background border-b border-sidebar">
       <div className="flex items-center">
@@ -25,7 +37,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
           <Image src="/images/logo.svg" alt="GPT-IQ" width={120} height={25} priority />
         </Link>
       </div>
-      <div>
+      <div className="flex items-center gap-4">
         <a 
           href="https://www.instagram.com/moonwhale.iq" 
           target="_blank"
@@ -34,6 +46,43 @@ export default function Header({ onMenuClick }: HeaderProps) {
         >
           Developers
         </a>
+        
+        {session?.user && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="rounded-full overflow-hidden">
+                <Avatar>
+                  <AvatarImage src={session.user.image || undefined} alt={session.user.name || 'User'} />
+                  <AvatarFallback>{session.user.name?.charAt(0) || 'U'}</AvatarFallback>
+                </Avatar>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-sidebar text-text-primary border-gray-accent">
+              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-gray-accent" />
+              <Link href="/profile">
+                <DropdownMenuItem className="cursor-pointer hover:bg-gray-700">
+                  <User className="mr-2 h-4 w-4" />
+                  <span>Profile</span>
+                </DropdownMenuItem>
+              </Link>
+              <Link href="/settings">
+                <DropdownMenuItem className="cursor-pointer hover:bg-gray-700">
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Settings</span>
+                </DropdownMenuItem>
+              </Link>
+              <DropdownMenuSeparator className="bg-gray-accent" />
+              <DropdownMenuItem 
+                className="cursor-pointer hover:bg-gray-700" 
+                onClick={() => signOut({ callbackUrl: '/auth/signin' })}
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Log out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
     </header>
   );

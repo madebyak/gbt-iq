@@ -5,8 +5,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ChatInput from './ChatInput';
 import ChatMessage from './ChatMessage';
 import LoadingDots from './LoadingDots';
-import useChatStore from '@/app/lib/hooks/useChatStore';
-import { loadingAnimationVariants } from '@/app/lib/utils/animations';
+import useChatStore from '../../lib/hooks/useChatStore';
+import { loadingAnimationVariants } from '../../lib/utils/animations';
+import { Button } from './Button';
+import { useSession } from 'next-auth/react';
 
 export default function ChatContainer() {
   const { 
@@ -14,9 +16,16 @@ export default function ChatContainer() {
     loading, 
     sendMessage, 
     createSession,
-    error 
+    error,
+    requireAuth,
+    demoMode,
+    demoMessageCount,
+    demoMessageLimit,
+    isMessagingPaused,
+    handleAuthPrompt
   } = useChatStore();
   
+  const { status } = useSession();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -134,12 +143,70 @@ export default function ChatContainer() {
             )}
           </AnimatePresence>
           
+          {/* Authentication prompt */}
+          <AnimatePresence>
+            {requireAuth && status !== 'authenticated' && (
+              <motion.div 
+                className="bg-accent/10 border border-accent/30 rounded-lg p-4 mx-4 my-4 text-center"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+              >
+                <p className="mb-3">
+                  To continue chatting and save your conversation history, please sign in.
+                </p>
+                <Button onClick={handleAuthPrompt} className="bg-accent hover:bg-accent/90">
+                  Sign In
+                </Button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          
+          {/* Demo mode indicator */}
+          <AnimatePresence>
+            {demoMode && status !== 'authenticated' && (
+              <motion.div 
+                className="text-xs text-center text-muted-foreground mx-4 my-2"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3, delay: 0.5 }}
+              >
+                <p>
+                  Demo mode: {demoMessageCount}/{demoMessageLimit} messages
+                  {demoMessageCount >= demoMessageLimit && ' - Sign in to continue chatting'}
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          
           <div ref={messagesEndRef} tabIndex={-1} />
         </div>
       </div>
       
       <div className="py-4 px-2 sm:py-6 sm:px-4 mt-auto">
-        <ChatInput onSendMessage={handleSendMessage} />
+        <ChatInput 
+          onSendMessage={handleSendMessage} 
+          disabled={requireAuth && status !== 'authenticated'}
+          placeholder={requireAuth && status !== 'authenticated' ? "Please sign in to continue chatting" : "Type a message..."}
+          isMessagingPaused={isMessagingPaused}
+        />
+        
+        {/* Sign in prompt at the bottom for demo mode users */}
+        {demoMode && status !== 'authenticated' && !requireAuth && (
+          <div className="text-center mt-2 text-sm text-muted-foreground">
+            <p>
+              Sign in to save your conversation history and continue chatting after the demo limit.
+            </p>
+            <Button 
+              onClick={handleAuthPrompt} 
+              variant="ghost" 
+              className="text-accent hover:text-accent/90 mt-1"
+            >
+              Sign In
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

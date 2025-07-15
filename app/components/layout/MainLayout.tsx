@@ -2,6 +2,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import useSwipeGesture from '@/app/lib/hooks/useSwipeGesture';
@@ -11,8 +13,14 @@ interface MainLayoutProps {
 }
 
 export default function MainLayout({ children }: MainLayoutProps) {
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const mainRef = useRef<HTMLDivElement>(null);
+
+  // We're removing the redirect to login for unauthenticated users
+  // This allows visitors to see the homepage and chat interface
+  // They'll only be prompted to log in when they try to send a message
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -63,10 +71,19 @@ export default function MainLayout({ children }: MainLayoutProps) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [toggleSidebar]);
 
+  // Show loading state while checking authentication
+  if (status === 'loading') {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background">
+        <div className="animate-pulse text-accent text-xl">Loading...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-screen bg-background overflow-hidden">
-      {/* Sidebar */}
-      <Sidebar isOpen={sidebarOpen} />
+      {/* Sidebar - only show for authenticated users */}
+      {status === 'authenticated' && <Sidebar isOpen={sidebarOpen} />}
       
       {/* Main content area - synchronized with sidebar animation */}
       <motion.div 
@@ -74,12 +91,12 @@ export default function MainLayout({ children }: MainLayoutProps) {
         className="flex flex-1 flex-col w-full"
         initial={false}
         animate={{
-          marginLeft: sidebarOpen ? '0' : '0',
-          filter: sidebarOpen ? 'brightness(0.9)' : 'brightness(1)'
+          marginLeft: sidebarOpen && status === 'authenticated' ? '0' : '0',
+          filter: sidebarOpen && status === 'authenticated' ? 'brightness(0.9)' : 'brightness(1)'
         }}
         transition={{ duration: 0.3, ease: "linear" }}
       >
-        <Header onMenuClick={toggleSidebar} />
+        <Header onMenuClick={status === 'authenticated' ? toggleSidebar : undefined} />
         <main className="flex-1 overflow-auto">
           {children}
         </main>
@@ -87,7 +104,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
       
       {/* Overlay for mobile only - shown when sidebar is open */}
       <AnimatePresence>
-        {sidebarOpen && (
+        {sidebarOpen && status === 'authenticated' && (
           <motion.div 
             className="fixed inset-0 z-20 bg-black transition-opacity md:hidden"
             initial={{ opacity: 0 }}

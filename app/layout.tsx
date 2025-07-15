@@ -1,6 +1,7 @@
 import './globals.css'
 import type { Metadata } from 'next'
 import { IBM_Plex_Sans, IBM_Plex_Sans_Arabic } from 'next/font/google'
+import AuthProvider from './providers/AuthProvider'
 
 const ibmPlexSans = IBM_Plex_Sans({
   weight: ['400', '500', '600', '700'],
@@ -28,7 +29,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" dir="ltr" className={`${ibmPlexSans.variable} ${ibmPlexSansArabic.variable}`}>
-      <body className="min-h-screen bg-[#1B1C1D] font-sans">{children}</body>
+      <body className="min-h-screen bg-[#1B1C1D] font-sans">
+        <AuthProvider>
+          {children}
+        </AuthProvider>
+      </body>
     </html>
   )
 }

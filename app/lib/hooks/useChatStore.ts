@@ -2,12 +2,20 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { ChatMessage, ChatSession } from '../types/chat';
+import { useSession, signIn } from 'next-auth/react';
 
 const useChatStore = () => {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [requireAuth, setRequireAuth] = useState(false);
+  const [demoMode, setDemoMode] = useState(false);
+  const [demoMessageCount, setDemoMessageCount] = useState(0);
+  const [demoMessageLimit, setDemoMessageLimit] = useState(1);
+  const [isMessagingPaused, setIsMessagingPaused] = useState(true); // Global messaging pause
+  
+  const { data: session } = useSession();
 
   // Get current session
   const currentSession = currentSessionId 
@@ -15,9 +23,9 @@ const useChatStore = () => {
     : null;
 
   // Generate unique ID
-  const generateId = () => {
+  const generateId = useCallback(() => {
     return Date.now().toString(36) + Math.random().toString(36).substring(2);
-  };
+  }, []);
 
   // Create new session
   const createSession = useCallback(() => {
@@ -35,9 +43,20 @@ const useChatStore = () => {
     return newSession;
   }, []);
 
+  // Handle authentication prompt
+  const handleAuthPrompt = useCallback(() => {
+    signIn();
+  }, []);
+
   // Send message to API
   const sendMessage = useCallback(async (content: string) => {
     console.log(`Sending message: "${content}"`);
+    
+    // Check if messaging is globally paused
+    if (isMessagingPaused) {
+      console.log('Messaging is paused - blocking message');
+      return false; // Return false to indicate message was blocked
+    }
     
     if (!currentSessionId) {
       console.log('No current session, creating one...');
@@ -94,6 +113,50 @@ const useChatStore = () => {
 
       const data = await response.json();
       console.log('API response data:', data);
+      
+      // Check if we need to prompt for authentication
+      if (data.requireAuth) {
+        console.log('Authentication required to continue chatting');
+        setRequireAuth(true);
+        
+        // Add AI response with auth prompt
+        const authPromptMessage: ChatMessage = {
+          id: generateId(),
+          role: 'model',
+          content: data.response,
+          timestamp: Date.now()
+        };
+        
+        setSessions(prev => 
+          prev.map(session => {
+            if (session.id === currentSessionId) {
+              return {
+                ...session,
+                messages: [...session.messages, authPromptMessage],
+                updatedAt: Date.now()
+              };
+            }
+            return session;
+          })
+        );
+        
+        setLoading(false);
+        return;
+      }
+      
+      // Check if we're in demo mode
+      if (data.demoMode) {
+        console.log('Demo mode active');
+        setDemoMode(true);
+        setDemoMessageCount(data.messageCount || 0);
+        setDemoMessageLimit(data.messageLimit || 1);
+        
+        // If this is a new session ID from demo mode, update it
+        if (data.sessionId && data.sessionId !== currentSessionId) {
+          console.log(`Updating session ID from ${currentSessionId} to ${data.sessionId} (demo mode)`);
+          setCurrentSessionId(data.sessionId);
+        }
+      }
       
       if (!data.response && !data.message) {
         console.error('No response or message in API response:', data);
@@ -155,6 +218,13 @@ const useChatStore = () => {
               return session;
             })
           );
+          
+          // Check if retry response indicates demo mode
+          if (retryData.demoMode) {
+            setDemoMode(true);
+            setDemoMessageCount(retryData.messageCount || 0);
+            setDemoMessageLimit(retryData.messageLimit || 1);
+          }
         }
       } else if (data.response) {
         // Add AI response to session
@@ -185,7 +255,15 @@ const useChatStore = () => {
     } finally {
       setLoading(false);
     }
-  }, [currentSessionId, createSession, generateId]);
+  }, [currentSessionId, createSession, generateId, isMessagingPaused]);
+
+  // Reset demo mode when user authenticates
+  useEffect(() => {
+    if (session && demoMode) {
+      setDemoMode(false);
+      setRequireAuth(false);
+    }
+  }, [session, demoMode]);
 
   // Load sessions from localStorage on initial render
   useEffect(() => {
@@ -203,7 +281,7 @@ const useChatStore = () => {
   // Save sessions to localStorage when they change
   useEffect(() => {
     if (sessions.length > 0) {
-      console.log('Saving sessions to localStorage:', sessions);
+      console.log('Saving sessions to localStorage');
       localStorage.setItem('chatSessions', JSON.stringify(sessions));
     }
   }, [sessions]);
@@ -214,9 +292,16 @@ const useChatStore = () => {
     currentSessionId,
     loading,
     error,
-    sendMessage,
+    requireAuth,
+    demoMode,
+    demoMessageCount,
+    demoMessageLimit,
+    isMessagingPaused,
     createSession,
-    setCurrentSessionId
+    sendMessage,
+    setCurrentSessionId,
+    handleAuthPrompt,
+    setIsMessagingPaused
   };
 };
 
